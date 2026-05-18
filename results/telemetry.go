@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/go-chi/render"
-	"github.com/xiaoxinpro/speedtest-go-zh/config"
-	"github.com/xiaoxinpro/speedtest-go-zh/database"
-	"github.com/xiaoxinpro/speedtest-go-zh/database/schema"
+	"github.com/meimolihan/speedtest-go-zh/config"
+	"github.com/meimolihan/speedtest-go-zh/database"
+	"github.com/meimolihan/speedtest-go-zh/database/schema"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -229,6 +229,37 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	darkTheme := r.FormValue("theme") == "dark"
+
+	var bgColor color.Color
+	var (
+		clrLabel, clrDownload, clrUpload, clrPing, clrJitter, clrMeasure, clrISP, clrWatermark image.Image
+		clrSeparator color.Color
+	)
+	if darkTheme {
+		bgColor = color.RGBA{15, 12, 41, 255}
+		clrLabel = image.NewUniform(color.RGBA{180, 200, 230, 255})
+		clrDownload = image.NewUniform(color.RGBA{100, 200, 255, 255})
+		clrUpload = image.NewUniform(color.RGBA{255, 130, 170, 255})
+		clrPing = image.NewUniform(color.RGBA{255, 150, 150, 255})
+		clrJitter = image.NewUniform(color.RGBA{255, 150, 150, 255})
+		clrMeasure = image.NewUniform(color.RGBA{150, 165, 190, 255})
+		clrISP = image.NewUniform(color.RGBA{150, 165, 190, 255})
+		clrWatermark = image.NewUniform(color.RGBA{80, 100, 140, 255})
+		clrSeparator = color.RGBA{60, 70, 110, 255}
+	} else {
+		bgColor = color.White
+		clrLabel = colorLabel
+		clrDownload = colorDownload
+		clrUpload = colorUpload
+		clrPing = colorPing
+		clrJitter = colorJitter
+		clrMeasure = colorMeasure
+		clrISP = colorISP
+		clrWatermark = colorWatermark
+		clrSeparator = colorSeparator
+	}
+
 	canvas := image.NewRGBA(image.Rectangle{
 		Min: image.Point{},
 		Max: image.Point{
@@ -237,14 +268,14 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 
-	draw.Draw(canvas, canvas.Bounds(), image.NewUniform(color.White), image.Point{}, draw.Src)
+	draw.Draw(canvas, canvas.Bounds(), image.NewUniform(bgColor), image.Point{}, draw.Src)
 
 	drawer := &font.Drawer{
 		Dst:  canvas,
 		Face: pingJitterLabelFace,
 	}
 
-	drawer.Src = colorLabel
+	drawer.Src = clrLabel
 
 	// labels
 	p := drawer.MeasureString(labelPing)
@@ -269,7 +300,7 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 	drawer.DrawString(labelUpload)
 
 	drawer.Face = smallLabelFace
-	drawer.Src = colorMeasure
+	drawer.Src = clrMeasure
 	p = drawer.MeasureString(labelMbps)
 	x = canvasWidth/4 - p.Round()/2
 	drawer.Dot = freetype.Pt(x, canvasHeight*8/10-middleOffset)
@@ -289,11 +320,11 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 
 	x = canvasWidth/4 - (p.Round()+msLength.Round())/2
 	drawer.Dot = freetype.Pt(x, canvasHeight*11/40)
-	drawer.Src = colorPing
+	drawer.Src = clrPing
 	drawer.DrawString(pingValue)
 	x = x + p.Round()
 	drawer.Dot = freetype.Pt(x, canvasHeight*11/40)
-	drawer.Src = colorMeasure
+	drawer.Src = clrMeasure
 	drawer.Face = smallLabelFace
 	drawer.DrawString(labelMS)
 
@@ -302,12 +333,12 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 	p = drawer.MeasureString(record.Jitter)
 	x = canvasWidth*3/4 - (p.Round()+msLength.Round())/2
 	drawer.Dot = freetype.Pt(x, canvasHeight*11/40)
-	drawer.Src = colorJitter
+	drawer.Src = clrJitter
 	drawer.DrawString(record.Jitter)
 	drawer.Face = smallLabelFace
 	x = x + p.Round()
 	drawer.Dot = freetype.Pt(x, canvasHeight*11/40)
-	drawer.Src = colorMeasure
+	drawer.Src = clrMeasure
 	drawer.DrawString(labelMS)
 
 	// download value
@@ -315,14 +346,14 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 	p = drawer.MeasureString(record.Download)
 	x = canvasWidth/4 - p.Round()/2
 	drawer.Dot = freetype.Pt(x, canvasHeight*27/40-middleOffset)
-	drawer.Src = colorDownload
+	drawer.Src = clrDownload
 	drawer.DrawString(record.Download)
 
 	// upload value
 	p = drawer.MeasureString(record.Upload)
 	x = canvasWidth*3/4 - p.Round()/2
 	drawer.Dot = freetype.Pt(x, canvasHeight*27/40-middleOffset)
-	drawer.Src = colorUpload
+	drawer.Src = clrUpload
 	drawer.DrawString(record.Upload)
 
 	// watermark
@@ -333,7 +364,7 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 	ctx.SetHinting(font.HintingFull)
 
 	drawer.Face = watermarkFace
-	drawer.Src = colorWatermark
+	drawer.Src = clrWatermark
 	p = drawer.MeasureString(watermark)
 	x = canvasWidth - p.Round() - 5
 	drawer.Dot = freetype.Pt(x, canvasHeight-bottomOffset)
@@ -347,12 +378,12 @@ func DrawPNG(w http.ResponseWriter, r *http.Request) {
 
 	// separator
 	for i := canvas.Bounds().Min.X; i < canvas.Bounds().Max.X; i++ {
-		canvas.Set(i, canvasHeight-ctx.PointToFixed(6).Round()-bottomOffset, colorSeparator)
+		canvas.Set(i, canvasHeight-ctx.PointToFixed(6).Round()-bottomOffset, clrSeparator)
 	}
 
 	// ISP info
 	drawer.Face = ispFace
-	drawer.Src = colorISP
+	drawer.Src = clrISP
 	drawer.Dot = freetype.Pt(8, canvasHeight-ctx.PointToFixed(6).Round()-ispOffset)
 	var ispString string
 	if strings.Contains(result.ProcessedString, "-") {

@@ -1,7 +1,7 @@
 /*
 	LibreSpeed - Worker
 	by Federico Dossena
-	https://github.com/xiaoxinpro/speedtest-go-zh/
+	https://github.com/meimolihan/speedtest-go-zh/
 	GNU LGPLv3 License
 */
 

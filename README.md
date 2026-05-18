@@ -1,4 +1,4 @@
-![LibreSpeed Logo](https://github.com/xiaoxinpro/speedtest-go-zh/blob/master/.logo/logo3.png?raw=true)
+![LibreSpeed Logo](https://github.com/meimolihan/speedtest-go-zh/blob/master/.logo/logo3.png?raw=true)
 
 # LibreSpeed 网速测速工具（中文版）
 
@@ -6,7 +6,21 @@
 
 > 本项目支持所有现代浏览器:IE11，最新的Edge，最新的Chrome，最新的Firefox，最新的Safari，当然也适用于移动版本。  
 
-![](https://image.xiaoxin.pro/2022/05/19/ac71bf749b755.png)
+## 界面预览
+
+### 🌙 暗色模式（默认）
+![暗色模式](https://file.meimolihan.eu.org/screenshot/compose_install_speedtest-02.webp)
+
+### ☀️ 亮色模式
+支持一键切换明暗主题，右上角按钮即可切换。
+
+### 🎨 赛博朋克 2077 主题
+- 霓虹青 `#00f0ff` / 霓虹粉 `#ff00aa` / 霓虹绿 `#00ff41` 三色配色
+- 几何斜角裁切（`clip-path`）设计
+- 扫描线网格背景 + 径向光晕
+- Orbitron 科技字体 + 发光文字效果
+- 按钮扫描线滑过动画
+- 结果分享图片支持暗色/亮色自动适配
 
 ## 功能
 * 下行测速
@@ -14,6 +28,7 @@
 * Ping延迟
 * Ping抖动
 * IP地址显示
+* 明暗主题切换
 * 统计记录
 * 截图分享 
 * 结果分享
@@ -36,15 +51,18 @@
 在你喜欢的目录中，创建一个 `docker-compose.yml` 文件:
 
 ```yml
-version: "3"
 services:
-  speedtest-go-zh:
-    image: "chishin/speedtest-go-zh:latest"
+  speedtest:
+    container_name: speedtest
+    image: mobufan/speedtest-go-zh:latest
     restart: always
+    network_mode: bridge
     ports:
-      - 8989:8989
+      - 7878:8989
     volumes:
       - ./config:/app/config
+    environment:
+      - TZ=Asia/Shanghai
 ```
 
 ### 3. 部署运行
@@ -55,10 +73,21 @@ docker-compose up -d
 
 ### 4. 网速测试
 
-当你的docker容器成功运行，使用浏览器访问`8989`端口。
+当你的docker容器成功运行，使用浏览器访问 `7878` 端口。
 有些时候需要稍等一段时间。
 
-[http://127.0.0.1:8989](http://127.0.0.1:8989)
+[http://127.0.0.1:7878](http://127.0.0.1:7878)
+
+### 5. 构建自定义镜像
+
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --cache-from type=registry,ref=mobufan/speedtest-go-zh:buildcache \
+  -t mobufan/speedtest-go-zh:latest \
+  -t mobufan/speedtest-go-zh:$(date +%Y.%m.%d) \
+  --push .
+```
 
 ### 5. 配置文件修改
 
@@ -81,6 +110,16 @@ docker-compose up -d
 ```
 这个项目将自动更新任何数据库或其他要求，所以你不必遵循任何疯狂的指示。上面的这些步骤将提取最新的更新并重新创建docker容器。
 
+## 主题定制
+
+前端界面支持明暗主题切换，默认采用赛博朋克 2077 风格设计。如需更换主题：
+
+1. 编辑 `web/assets/index.html` 中的 `<style>` 部分
+2. 修改仪表盘配色变量 `dlColor`、`ulColor`、`meterBk` 等
+3. 重新构建 Docker 镜像即可生效
+
+结果分享图片会根据前端明暗模式自动传递 `?theme=dark` 参数，后端（`results/telemetry.go`）渲染对应配色的 PNG。
+
 ## 二次开发
 
 你需要用Go 1.17+来编译二进制文件。 如果你有一个旧版本的Go并且不想手动安装打包工具，你可以安装更新版本的Go到你的“GOPATH”:  
@@ -97,7 +136,7 @@ go version go1.17.1 linux/amd64
 ### 1. 克隆项目:
 
 ```
-$ git clone github.com/xiaoxinpro/speedtest-go-zh
+$ git clone github.com/meimolihan/speedtest-go-zh
 ```
 
 ### 2. 编译

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/xiaoxinpro/speedtest-go-zh/database/schema"
+	"github.com/meimolihan/speedtest-go-zh/database/schema"
 
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"

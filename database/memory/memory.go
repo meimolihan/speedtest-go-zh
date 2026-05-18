@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/xiaoxinpro/speedtest-go-zh/database/schema"
+	"github.com/meimolihan/speedtest-go-zh/database/schema"
 )
 
 const (

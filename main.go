@@ -6,10 +6,10 @@ import (
 	"os"
 	_ "time/tzdata"
 
-	"github.com/xiaoxinpro/speedtest-go-zh/config"
-	"github.com/xiaoxinpro/speedtest-go-zh/database"
-	"github.com/xiaoxinpro/speedtest-go-zh/results"
-	"github.com/xiaoxinpro/speedtest-go-zh/web"
+	"github.com/meimolihan/speedtest-go-zh/config"
+	"github.com/meimolihan/speedtest-go-zh/database"
+	"github.com/meimolihan/speedtest-go-zh/results"
+	"github.com/meimolihan/speedtest-go-zh/web"
 
 	_ "github.com/breml/rootcerts"
 	log "github.com/sirupsen/logrus"

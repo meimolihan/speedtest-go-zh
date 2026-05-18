@@ -1,4 +1,4 @@
-module github.com/xiaoxinpro/speedtest-go-zh
+module github.com/meimolihan/speedtest-go-zh
 
 go 1.16
 
