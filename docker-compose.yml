@@ -1,9 +1,9 @@
-version: "3"
 services:
-  speedtest-go-zh:
-    image: "chishin/speedtest-go-zh:latest"
-    restart: always
-    ports:
-      - 8989:8989
-    volumes:
-      - ./config:/app/config
+   speedtest-go-zh:
+      build: .
+      image: chishin/speedtest-go-zh:latest
+      restart: always
+      ports:
+         - 8989:8989
+      volumes:
+         - ./config:/app/config
