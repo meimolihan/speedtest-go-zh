@@ -1,7 +1,7 @@
 services:
    speedtest-go-zh:
       build: .
-      image: chishin/speedtest-go-zh:latest
+      image: mobufan/speedtest-go-zh:latest
       restart: always
       ports:
          - 8989:8989

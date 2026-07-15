@@ -1,865 +1,1538 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN" data-theme="dark">
 <head>
-	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no" />
-	<meta charset="UTF-8" />
-	<link rel="shortcut icon" href="favicon.ico">
-	<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-	<script type="text/javascript" src="speedtest.js"></script>
-	<script type="text/javascript">
-		function I(i){return document.getElementById(i);}
-		var s=new Speedtest();
-		s.setParameter("telemetry_level","basic");
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no, user-scalable=no">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="speedtest.js"></script>
+    <title>网络速度测试</title>
+    <style>
+        /* ========================================
+           CSS Variables - Design Tokens
+           ======================================== */
+        :root {
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 48px;
 
-		var meterBk="rgba(255,255,255,0.05)";
-		var dlColor="#00f0ff",
-				ulColor="#ff00aa";
-		var progColor="#00f0ff";
+            /* Border Radius */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
 
-		function drawMeter(c,amount,bk,fg,progress,prog){
-			var ctx=c.getContext("2d");
-			var dp=window.devicePixelRatio||1;
-			var cw=c.clientWidth*dp, ch=c.clientHeight*dp;
-			var sizScale=ch*0.0055;
-			if(c.width==cw&&c.height==ch){
-				ctx.clearRect(0,0,cw,ch);
-			}else{
-				c.width=cw;
-				c.height=ch;
-			}
-			ctx.beginPath();
-			ctx.strokeStyle=bk;
-			ctx.lineWidth=12*sizScale;
-			ctx.arc(c.width/2,c.height-58*sizScale,c.height/1.8-ctx.lineWidth,-Math.PI*1.1,Math.PI*0.1);
-			ctx.stroke();
-			ctx.beginPath();
-			ctx.strokeStyle=fg;
-			ctx.lineWidth=12*sizScale;
-			ctx.arc(c.width/2,c.height-58*sizScale,c.height/1.8-ctx.lineWidth,-Math.PI*1.1,amount*Math.PI*1.2-Math.PI*1.1);
-			ctx.stroke();
-			if(typeof progress !== "undefined"){
-				ctx.fillStyle=prog;
-				ctx.fillRect(c.width*0.3,c.height-40*sizScale,c.width*0.4*progress,5*sizScale);
-			}
-		}
-		function mbpsToAmount(s){
-			return 1-(1/(Math.pow(1.3,Math.sqrt(s))));
-		}
-		function format(d){
-			d=Number(d);
-			if(d<10) return d.toFixed(2);
-			if(d<100) return d.toFixed(1);
-			return d.toFixed(0);
-		}
+            /* Transitions */
+            --transition-fast: 150ms ease;
+            --transition-normal: 250ms ease;
+            --transition-slow: 350ms ease;
 
-		var uiData=null;
-		function startStop(){
-			if(s.getState()==3){
-				s.abort();
-				data=null;
-				I("startStopBtn").className="";
-				initUI();
-			}else{
-				I("startStopBtn").className="running";
-				I("shareArea").style.display="none";
-				s.onupdate=function(data){
-					uiData=data;
-				};
-				s.onend=function(aborted){
-					I("startStopBtn").className="";
-					updateUI(true);
-					if(!aborted){
-						try{
-							var testId=uiData.testId;
-							if(testId!=null){
-								var themeParam=document.body.classList.contains('light-mode')?"":"&theme=dark";
-								var shareURL=window.location.href.substring(0,window.location.href.lastIndexOf("/"))+"/results/?id="+testId+themeParam;
-								I("resultsImg").src=shareURL;
-								I("resultsURL").value=shareURL;
-								I("testId").innerHTML=testId;
-								I("shareArea").style.display="";
-							}
-						}catch(e){}
-					}
-				};
-				s.start();
-			}
-		}
-		function updateUI(forced){
-			if(!forced&&s.getState()!=3) return;
-			if(uiData==null) return;
-			var status=uiData.testState;
-			I("ip").textContent=uiData.clientIp;
-			I("dlText").textContent=(status==1&&uiData.dlStatus==0)?"...":format(uiData.dlStatus);
-			drawMeter(I("dlMeter"),mbpsToAmount(Number(uiData.dlStatus*(status==1?oscillate():1))),meterBk,dlColor,Number(uiData.dlProgress),progColor);
-			I("ulText").textContent=(status==3&&uiData.ulStatus==0)?"...":format(uiData.ulStatus);
-			drawMeter(I("ulMeter"),mbpsToAmount(Number(uiData.ulStatus*(status==3?oscillate():1))),meterBk,ulColor,Number(uiData.ulProgress),progColor);
-			I("pingText").textContent=format(uiData.pingStatus);
-			I("jitText").textContent=format(uiData.jitterStatus);
-		}
-		function oscillate(){
-			return 1+0.02*Math.sin(Date.now()/100);
-		}
-		window.requestAnimationFrame=window.requestAnimationFrame||window.webkitRequestAnimationFrame||window.mozRequestAnimationFrame||window.msRequestAnimationFrame||(function(callback,element){setTimeout(callback,1000/60);});
-		function frame(){
-			requestAnimationFrame(frame);
-			updateUI();
-		}
-		frame();
-		function initUI(){
-			drawMeter(I("dlMeter"),0,meterBk,dlColor,0);
-			drawMeter(I("ulMeter"),0,meterBk,ulColor,0);
-			I("dlText").textContent="";
-			I("ulText").textContent="";
-			I("pingText").textContent="";
-			I("jitText").textContent="";
-			I("ip").textContent="";
-		}
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-		function toggleTheme(){
-			document.body.classList.toggle('light-mode');
-			var btn=I("themeToggle");
-			if(document.body.classList.contains('light-mode')){
-				btn.innerHTML="&#9790;";
-				btn.title="切换到暗色模式";
-			}else{
-				btn.innerHTML="&#9728;";
-				btn.title="切换到亮色模式";
-			}
-		}
-		function copyResult(){
-			var input=I("resultsURL");
-			input.select();
-			input.focus();
-			input.select();
-			document.execCommand('copy');
-			var btn=I("copyBtn");
-			btn.classList.add('copied');
-			btn.textContent="已复制!";
-			setTimeout(function(){
-				btn.classList.remove('copied');
-				btn.textContent="复制";
-			},2000);
-		}
-	</script>
-	<style type="text/css">
-		*{margin:0;padding:0;box-sizing:border-box;}
+            /* Typography */
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 
-		html,body{
-			border:none; padding:0; margin:0;
-			color:#c0c0c0;
-			min-height:100vh;
-			transition:background 0.4s,color 0.4s;
-		}
-		body{
-			text-align:center;
-			font-family:"Inter","Roboto",sans-serif;
-			overflow-x:hidden;
-			background:#050508;
-			background-image:
-				linear-gradient(rgba(0,240,255,0.025) 1px, transparent 1px),
-				linear-gradient(90deg, rgba(0,240,255,0.025) 1px, transparent 1px);
-			background-size:48px 48px;
-			position:relative;
-		}
-		body::before{
-			content:"";
-			position:fixed;
-			top:0;left:0;right:0;bottom:0;
-			background:radial-gradient(ellipse 60% 40% at 25% 30%, rgba(0,240,255,0.06) 0%, transparent 60%),
-			           radial-gradient(ellipse 50% 35% at 75% 65%, rgba(255,0,170,0.06) 0%, transparent 60%);
-			pointer-events:none;
-			z-index:0;
-		}
+            /* Colors - Dark Theme (Default) */
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #111113;
+            --bg-tertiary: #1a1a1d;
+            --bg-elevated: #222225;
 
-		/* HEADER */
-		.header{
-			position:relative;
-			z-index:10;
-			display:flex;
-			justify-content:space-between;
-			align-items:center;
-			padding:1em 2em;
-			border-bottom:1px solid rgba(0,240,255,0.08);
-			background:rgba(5,5,8,0.85);
-			backdrop-filter:blur(8px);
-		}
-		.header h1{
-			font-family:"Orbitron",sans-serif;
-			font-size:1.3em;
-			font-weight:900;
-			letter-spacing:0.18em;
-			text-transform:uppercase;
-			background:linear-gradient(90deg, #00f0ff, #ff00aa);
-			-webkit-background-clip:text;
-			-webkit-text-fill-color:transparent;
-			background-clip:text;
-		}
+            --text-primary: #ededed;
+            --text-secondary: #a1a1a1;
+            --text-tertiary: #666666;
+            --text-inverse: #0a0a0b;
 
-		#themeToggle{
-			background:rgba(0,240,255,0.04);
-			border:1px solid rgba(0,240,255,0.1);
-			color:rgba(0,240,255,0.5);
-			font-size:1.2em;
-			width:2.4em;
-			height:2.4em;
-			border-radius:0;
-			cursor:pointer;
-			transition:all 0.3s;
-			display:flex;
-			align-items:center;
-			justify-content:center;
-			line-height:1;
-			font-family:"Orbitron",sans-serif;
-			clip-path:polygon(12.5% 0%, 87.5% 0%, 100% 12.5%, 100% 87.5%, 87.5% 100%, 12.5% 100%, 0% 87.5%, 0% 12.5%);
-		}
-		#themeToggle:hover{
-			background:rgba(0,240,255,0.1);
-			border-color:rgba(0,240,255,0.25);
-			box-shadow:0 0 20px rgba(0,240,255,0.1);
-		}
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-default: rgba(255, 255, 255, 0.1);
+            --border-strong: rgba(255, 255, 255, 0.15);
 
-		/* MAIN AREA */
-		.main-area{
-			position:relative;
-			z-index:1;
-			padding:2em 1em 4em;
-			max-width:800px;
-			margin:0 auto;
-		}
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #2563eb;
+            --accent-green: #10b981;
+            --accent-pink: #ec4899;
+            --accent-cyan: #06b6d4;
 
-		/* BUTTON */
-		#startStopBtn{
-			display:inline-flex;
-			align-items:center;
-			justify-content:center;
-			margin:0.5em auto;
-			color:#00f0ff;
-			background:rgba(0,240,255,0.03);
-			border:1.5px solid rgba(0,240,255,0.2);
-			transition:all 0.3s;
-			box-sizing:border-box;
-			width:12em; height:3.2em;
-			line-height:3.2em;
-			cursor:pointer;
-			font-family:"Orbitron",sans-serif;
-			font-size:0.95em;
-			font-weight:700;
-			letter-spacing:0.25em;
-			text-transform:uppercase;
-			position:relative;
-			overflow:hidden;
-			clip-path:polygon(8% 0%, 100% 0%, 92% 100%, 0% 100%);
-		}
-		#startStopBtn::before{
-			content:"开始测试";
-			position:relative;
-			z-index:1;
-		}
-		#startStopBtn::after{
-			content:"";
-			position:absolute;
-			top:0;left:-100%;
-			width:100%;height:100%;
-			background:linear-gradient(90deg, transparent, rgba(0,240,255,0.08), transparent);
-			transition:left 0.6s;
-		}
-		#startStopBtn:hover::after{
-			left:100%;
-		}
-		#startStopBtn:hover{
-			background:rgba(0,240,255,0.08);
-			border-color:rgba(0,240,255,0.35);
-			box-shadow:0 0 30px rgba(0,240,255,0.08);
-		}
-		#startStopBtn.running{
-			color:#ff00aa;
-			border-color:rgba(255,0,170,0.25);
-			background:rgba(255,0,170,0.05);
-		}
-		#startStopBtn.running:hover{
-			background:rgba(255,0,170,0.1);
-			border-color:rgba(255,0,170,0.4);
-			box-shadow:0 0 30px rgba(255,0,170,0.1);
-		}
-		#startStopBtn.running::before{
-			content:"停止";
-		}
+            /* Speed Test Colors */
+            --color-download: #3b82f6;
+            --color-upload: #ec4899;
+            --color-ping: #10b981;
+            --color-jitter: #f59e0b;
 
-		.privacy-link{
-			display:inline-block;
-			margin-top:0.8em;
-			font-size:0.8em;
-			color:rgba(0,240,255,0.2);
-			text-decoration:none;
-			font-family:"Orbitron",sans-serif;
-			letter-spacing:0.1em;
-			transition:color 0.3s;
-		}
-		.privacy-link:hover{
-			color:rgba(0,240,255,0.5);
-		}
+            /* Component Specific */
+            --meter-bg: rgba(255, 255, 255, 0.06);
+            --card-bg: rgba(255, 255, 255, 0.03);
+            --card-border: rgba(255, 255, 255, 0.06);
+            --card-hover-bg: rgba(255, 255, 255, 0.05);
+            --card-hover-border: rgba(255, 255, 255, 0.1);
 
-		#test{
-			margin-top:2em;
-			margin-bottom:6em;
-		}
+            --overlay-bg: rgba(0, 0, 0, 0.8);
+            --modal-bg: #111113;
+        }
 
-		/* TEST AREAS */
-		.testGroup{
-			display:flex;
-			justify-content:center;
-			align-items:flex-start;
-			gap:1.5em;
-			margin-bottom:1.5em;
-			flex-wrap:wrap;
-		}
-		.testArea, .testArea2{
-			position:relative;
-			box-sizing:border-box;
-			background:rgba(0,240,255,0.02);
-			border:1px solid rgba(0,240,255,0.06);
-			padding:0.8em;
-			transition:all 0.35s;
-			clip-path:polygon(0% 0%, calc(100% - 12px) 0%, 100% 12px, 100% 100%, 12px 100%, 0% calc(100% - 12px));
-		}
-		.testArea:hover, .testArea2:hover{
-			background:rgba(0,240,255,0.04);
-			border-color:rgba(0,240,255,0.15);
-			box-shadow:0 0 40px rgba(0,240,255,0.04);
-		}
-		.testArea{
-			width:16em;
-			height:13em;
-		}
-		.testArea2{
-			width:14em;
-			height:7em;
-			text-align:center;
-			display:flex;
-			flex-direction:column;
-			justify-content:center;
-			align-items:center;
-		}
-		.testArea .testName, .testArea2 .testName{
-			font-family:"Orbitron",sans-serif;
-			font-size:0.75em;
-			font-weight:700;
-			letter-spacing:0.2em;
-			text-transform:uppercase;
-			position:absolute;
-			top:0.8em; left:0;
-			width:100%;
-			z-index:9;
-			color:rgba(0,240,255,0.3);
-		}
-		.testArea2 .testName{
-			position:static;
-			margin-bottom:0.2em;
-		}
-		.testArea .meterText, .testArea2 .meterText{
-			position:absolute;
-			bottom:1em; left:0;
-			width:100%;
-			z-index:9;
-			font-family:"Orbitron",sans-serif;
-			font-size:2.6em;
-			font-weight:900;
-			letter-spacing:0.04em;
-		}
-		#dlText{
-			color:#00f0ff;
-			text-shadow:0 0 20px rgba(0,240,255,0.3), 0 0 40px rgba(0,240,255,0.1);
-		}
-		#ulText{
-			color:#ff00aa;
-			text-shadow:0 0 20px rgba(255,0,170,0.3), 0 0 40px rgba(255,0,170,0.1);
-		}
-		#pingText, #jitText{
-			color:#00ff41;
-			text-shadow:0 0 20px rgba(0,255,65,0.25), 0 0 40px rgba(0,255,65,0.08);
-		}
-		.testArea2 .meterText{
-			position:static;
-			display:block;
-			text-align:center;
-			font-size:2em;
-		}
-		div.meterText:empty:before{
-			content:"0.00";
-			opacity:0.12;
-		}
-		div.testArea .unit, div.testArea2 .unit{
-			position:absolute;
-			bottom:0.5em; left:0;
-			width:100%;
-			z-index:9;
-			font-family:"Orbitron",sans-serif;
-			font-size:0.7em;
-			letter-spacing:0.15em;
-			color:rgba(0,240,255,0.15);
-		}
-		div.testArea2 .unit{
-			position:static;
-			margin-top:0.1em;
-		}
-		.testArea canvas{
-			position:absolute;
-			top:0; left:0; width:100%; height:100%;
-			z-index:1;
-		}
+        /* Light Theme */
+        [data-theme="light"] {
+            --bg-primary: #f1f5f9;
+            --bg-secondary: #e2e8f0;
+            --bg-tertiary: #cbd5e1;
+            --bg-elevated: #ffffff;
 
-		#ipArea{
-			margin-top:1.5em;
-			font-size:0.85em;
-			font-family:"Orbitron",sans-serif;
-			letter-spacing:0.1em;
-			color:rgba(0,240,255,0.15);
-		}
-		#ipArea #ip{
-			color:rgba(0,240,255,0.35);
-			font-weight:700;
-		}
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-tertiary: #64748b;
+            --text-inverse: #ffffff;
 
-		#shareArea{
-			width:95%;
-			max-width:40em;
-			margin:0 auto;
-			margin-top:2em;
-			padding:1.8em 1.5em 1.5em;
-			border:1px solid rgba(0,240,255,0.06);
-			background:rgba(0,240,255,0.02);
-			position:relative;
-			overflow:hidden;
-			clip-path:polygon(0% 0%, calc(100% - 16px) 0%, 100% 16px, 100% 100%, 16px 100%, 0% calc(100% - 16px));
-		}
-		#shareArea::before{
-			content:"";
-			position:absolute;
-			top:0;left:0;right:0;
-			height:2px;
-			background:linear-gradient(90deg, #00f0ff, #ff00aa);
-		}
-		#shareArea > *{
-			display:block;
-			width:100%;
-			height:auto;
-			margin:0.5em 0;
-		}
-		#shareArea h3{
-			color:#e0e0e0;
-			font-family:"Orbitron",sans-serif;
-			font-weight:700;
-			font-size:1em;
-			letter-spacing:0.15em;
-			text-transform:uppercase;
-			margin-bottom:0.8em;
-		}
-		.share-divider{
-			height:1px;
-			background:rgba(0,240,255,0.04);
-			margin:0.8em 0;
-		}
-		.share-field{
-			display:flex;
-			align-items:center;
-			gap:0.6em;
-			padding:0.4em 0;
-		}
-		.share-field label{
-			font-family:"Orbitron",sans-serif;
-			font-size:0.72em;
-			color:rgba(0,240,255,0.2);
-			font-weight:700;
-			white-space:nowrap;
-			letter-spacing:0.15em;
-			text-transform:uppercase;
-			min-width:4em;
-		}
-		#resultsURL{
-			flex:1;
-			background:rgba(0,240,255,0.03);
-			border:1px solid rgba(0,240,255,0.06);
-			color:#c0c0c0;
-			padding:0.7em 0.8em;
-			font-family:"Inter",system-ui,-apple-system,sans-serif;
-			font-size:0.82em;
-			text-align:center;
-			outline:none;
-			transition:border-color 0.2s,background 0.2s;
-			cursor:text;
-		}
-		#resultsURL:focus{
-			border-color:rgba(0,240,255,0.2);
-			background:rgba(0,240,255,0.05);
-		}
-		#copyBtn{
-			background:rgba(0,240,255,0.06);
-			border:1px solid rgba(0,240,255,0.15);
-			color:#00f0ff;
-			padding:0.7em 1.2em;
-			font-family:"Orbitron",sans-serif;
-			font-size:0.75em;
-			font-weight:700;
-			letter-spacing:0.1em;
-			cursor:pointer;
-			transition:all 0.25s;
-			white-space:nowrap;
-			min-width:4.5em;
-			text-align:center;
-		}
-		#copyBtn:hover{
-			background:rgba(0,240,255,0.12);
-			border-color:rgba(0,240,255,0.3);
-			box-shadow:0 0 20px rgba(0,240,255,0.06);
-		}
-		#copyBtn:active{
-			transform:scale(0.96);
-		}
-		#copyBtn.copied{
-			background:rgba(0,255,65,0.08);
-			border-color:rgba(0,255,65,0.15);
-			color:#00ff41;
-		}
-		#shareArea .share-badge{
-			display:inline-block;
-			padding:0.25em 0.8em;
-			font-family:"Orbitron",sans-serif;
-			font-size:0.75em;
-			font-weight:700;
-			letter-spacing:0.08em;
-			background:rgba(0,240,255,0.04);
-			color:#00f0ff;
-			border:1px solid rgba(0,240,255,0.06);
-		}
-		#shareArea .share-img{
-			margin-top:0.8em;
-			border:1px solid rgba(0,240,255,0.04);
-			width:100%;
-			height:auto;
-			display:block;
-			clip-path:polygon(0% 0%, calc(100% - 8px) 0%, 100% 8px, 100% 100%, 8px 100%, 0% calc(100% - 8px));
-		}
+            --border-subtle: #cbd5e1;
+            --border-default: #94a3b8;
+            --border-strong: #64748b;
 
-		.footer-link{
-			display:inline-block;
-			margin-top:1.5em;
-			font-family:"Orbitron",sans-serif;
-			font-size:0.75em;
-			letter-spacing:0.15em;
-			color:rgba(0,240,255,0.08);
-			text-decoration:none;
-			transition:color 0.3s;
-		}
-		.footer-link:hover{
-			color:rgba(0,240,255,0.25);
-		}
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
 
-		#privacyPolicy{
-			position:fixed;
-			top:2em;
-			bottom:2em;
-			left:2em;
-			right:2em;
-			overflow-y:auto;
-			width:auto;
-			height:auto;
-			box-shadow:0 0 60px rgba(0,0,0,0.8);
-			z-index:999999;
-			text-align:left;
-			background:#080810;
-			border:1px solid rgba(0,240,255,0.06);
-			padding:1.5em;
-			color:rgba(255,255,255,0.4);
-			clip-path:polygon(0% 0%, calc(100% - 20px) 0%, 100% 20px, 100% 100%, 20px 100%, 0% calc(100% - 20px));
-		}
-		#privacyPolicy h2,#privacyPolicy h4{
-			font-family:"Orbitron",sans-serif;
-			color:#00f0ff;
-			letter-spacing:0.08em;
-			margin-bottom:0.6em;
-		}
-		#privacyPolicy h2{ font-size:1.2em; }
-		#privacyPolicy h4{ font-size:0.85em; margin-top:1em; }
-		#privacyPolicy p{ margin-bottom:0.5em; line-height:1.6; }
-		#privacyPolicy ul{ margin-left:1.5em; margin-bottom:0.5em; }
-		#privacyPolicy li{ margin-bottom:0.3em; }
-		#privacyPolicy a{ color:#00f0ff; }
-		div.closePrivacyPolicy{
-			width:100%;
-			text-align:center;
-			margin-top:1.5em;
-		}
-		div.closePrivacyPolicy a.privacy-link{
-			padding:0.6em 3em;
-			border:1px solid rgba(0,240,255,0.08);
-			display:inline-block;
-		}
-		div.closePrivacyPolicy a.privacy-link:hover{
-			background:rgba(0,240,255,0.04);
-		}
+            --color-download: #1d4ed8;
+            --color-upload: #be185d;
+            --color-ping: #047857;
+            --color-jitter: #b45309;
 
-		/* ===== LIGHT MODE ===== */
-		body.light-mode{
-			color:#1a1a2e;
-			background:#f0f0f5;
-			background-image:
-				linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
-				linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
-			background-size:48px 48px;
-		}
-		body.light-mode::before{
-			background:radial-gradient(ellipse 60% 40% at 25% 30%, rgba(0,150,255,0.04) 0%, transparent 60%),
-			           radial-gradient(ellipse 50% 35% at 75% 65%, rgba(200,0,150,0.04) 0%, transparent 60%);
-		}
-		body.light-mode .header{
-			background:rgba(240,240,245,0.85);
-			border-bottom:1px solid rgba(0,0,0,0.04);
-		}
-		body.light-mode .header h1{
-			filter:saturate(1.4) brightness(0.7);
-		}
-		body.light-mode #themeToggle{
-			background:rgba(0,0,0,0.03);
-			border-color:rgba(0,0,0,0.06);
-			color:rgba(0,0,0,0.35);
-		}
-		body.light-mode #themeToggle:hover{
-			background:rgba(0,0,0,0.06);
-			border-color:rgba(0,0,0,0.12);
-			box-shadow:0 0 20px rgba(0,0,0,0.04);
-		}
-		body.light-mode #startStopBtn{
-			color:#0060a0;
-			border-color:rgba(0,96,160,0.2);
-			background:rgba(0,96,160,0.04);
-		}
-		body.light-mode #startStopBtn:hover{
-			background:rgba(0,96,160,0.1);
-			border-color:rgba(0,96,160,0.35);
-			box-shadow:0 0 30px rgba(0,96,160,0.06);
-		}
-		body.light-mode #startStopBtn.running{
-			color:#c00080;
-			border-color:rgba(192,0,128,0.2);
-			background:rgba(192,0,128,0.04);
-		}
-		body.light-mode #startStopBtn.running:hover{
-			background:rgba(192,0,128,0.1);
-			border-color:rgba(192,0,128,0.35);
-			box-shadow:0 0 30px rgba(192,0,128,0.06);
-		}
-		body.light-mode .testArea, body.light-mode .testArea2{
-			background:rgba(255,255,255,0.5);
-			border-color:rgba(0,0,0,0.04);
-		}
-		body.light-mode .testArea:hover, body.light-mode .testArea2:hover{
-			background:rgba(255,255,255,0.8);
-			border-color:rgba(0,0,0,0.08);
-			box-shadow:0 0 40px rgba(0,0,0,0.03);
-		}
-		body.light-mode .testArea .testName, body.light-mode .testArea2 .testName{
-			color:rgba(0,0,0,0.25);
-		}
-		body.light-mode #dlText{
-			color:#0060a0;
-			text-shadow:0 0 20px rgba(0,96,160,0.12);
-		}
-		body.light-mode #ulText{
-			color:#c00080;
-			text-shadow:0 0 20px rgba(192,0,128,0.12);
-		}
-		body.light-mode #pingText, body.light-mode #jitText{
-			color:#008840;
-			text-shadow:0 0 20px rgba(0,136,64,0.1);
-		}
-		body.light-mode div.testArea .unit, body.light-mode div.testArea2 .unit{
-			color:rgba(0,0,0,0.15);
-		}
-		body.light-mode #ipArea{
-			color:rgba(0,0,0,0.15);
-		}
-		body.light-mode #ipArea #ip{
-			color:rgba(0,0,0,0.35);
-		}
-		body.light-mode .privacy-link{
-			color:rgba(0,0,0,0.15);
-		}
-		body.light-mode .privacy-link:hover{
-			color:rgba(0,0,0,0.4);
-		}
-		body.light-mode .footer-link{
-			color:rgba(0,0,0,0.08);
-		}
-		body.light-mode .footer-link:hover{
-			color:rgba(0,0,0,0.25);
-		}
-		body.light-mode #shareArea{
-			background:rgba(255,255,255,0.6);
-			border-color:rgba(0,0,0,0.04);
-		}
-		body.light-mode #shareArea::before{
-			background:linear-gradient(90deg, #0060a0, #c00080);
-		}
-		body.light-mode #shareArea h3{
-			color:#1a1a2e;
-		}
-		body.light-mode .share-divider{
-			background:rgba(0,0,0,0.04);
-		}
-		body.light-mode .share-field label{
-			color:rgba(0,0,0,0.2);
-		}
-		body.light-mode #resultsURL{
-			background:rgba(255,255,255,0.5);
-			border-color:rgba(0,0,0,0.06);
-			color:#1a1a2e;
-		}
-		body.light-mode #resultsURL:focus{
-			border-color:rgba(0,96,160,0.2);
-			background:rgba(0,96,160,0.03);
-		}
-		body.light-mode #copyBtn{
-			background:rgba(0,96,160,0.05);
-			border-color:rgba(0,96,160,0.15);
-			color:#0060a0;
-		}
-		body.light-mode #copyBtn:hover{
-			background:rgba(0,96,160,0.1);
-			border-color:rgba(0,96,160,0.3);
-			box-shadow:0 0 20px rgba(0,96,160,0.06);
-		}
-		body.light-mode #copyBtn.copied{
-			background:rgba(0,136,64,0.06);
-			border-color:rgba(0,136,64,0.15);
-			color:#008840;
-		}
-		body.light-mode #shareArea .share-badge{
-			background:rgba(0,96,160,0.04);
-			color:#0060a0;
-			border-color:rgba(0,96,160,0.06);
-		}
-		body.light-mode #shareArea .share-img{
-			border-color:rgba(0,0,0,0.04);
-		}
-		body.light-mode #privacyPolicy{
-			background:rgba(255,255,255,0.95);
-			border-color:rgba(0,0,0,0.04);
-			color:rgba(0,0,0,0.4);
-			box-shadow:0 0 60px rgba(0,0,0,0.06);
-		}
-		body.light-mode #privacyPolicy h2, body.light-mode #privacyPolicy h4{
-			color:#0060a0;
-		}
+            --meter-bg: #cbd5e1;
+            --card-bg: #ffffff;
+            --card-border: #cbd5e1;
+            --card-hover-bg: #f8fafc;
+            --card-hover-border: #94a3b8;
 
-		@media all and (max-width:40em){
-			.header{ padding:1em; }
-			.header h1{ font-size:1em; letter-spacing:0.1em; }
-			.testArea{ width:14em; height:11em; }
-			.testArea2{ width:12em; height:6em; }
-			.testArea .meterText{ font-size:2em; }
-			.testArea2 .meterText{ font-size:1.6em; }
-			#themeToggle{ width:2em; height:2em; font-size:1em; }
-		}
-	</style>
-	<title>网络速度测试</title>
+            --overlay-bg: rgba(0, 0, 0, 0.5);
+            --modal-bg: #ffffff;
+
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ========================================
+           Base Reset
+           ======================================== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            font-size: 16px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            min-height: 100vh;
+            transition: background-color var(--transition-normal), color var(--transition-normal);
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-strong);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-tertiary);
+        }
+
+        /* ========================================
+           Layout
+           ======================================== */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 var(--space-lg);
+        }
+
+        /* ========================================
+           Header
+           ======================================== */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md) var(--space-lg);
+            background-color: rgba(10, 10, 11, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            transition: background-color var(--transition-normal), border-color var(--transition-normal);
+        }
+
+        [data-theme="light"] .header {
+            background-color: rgba(241, 245, 249, 0.9);
+            border-bottom-color: #cbd5e1;
+        }
+
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .header-logo {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            border-radius: var(--radius-sm);
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        /* ========================================
+           Theme Toggle Button
+           ======================================== */
+        .theme-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            background: transparent;
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .theme-toggle:hover {
+            background: var(--card-hover-bg);
+            border-color: var(--border-strong);
+            color: var(--text-primary);
+        }
+
+        .theme-toggle svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .theme-toggle .icon-sun,
+        [data-theme="light"] .theme-toggle .icon-moon {
+            display: none;
+        }
+
+        [data-theme="light"] .theme-toggle .icon-sun {
+            display: block;
+        }
+
+        .theme-toggle .icon-moon {
+            display: block;
+        }
+
+        /* ========================================
+           Main Content
+           ======================================== */
+        .main {
+            padding: var(--space-2xl) 0;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-xl);
+        }
+
+        /* ========================================
+           Start Button
+           ======================================== */
+        .start-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 180px;
+            height: 48px;
+            padding: 0 var(--space-xl);
+            font-family: var(--font-sans);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-inverse);
+            background: var(--accent-blue);
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            overflow: hidden;
+        }
+
+        .start-btn:hover {
+            background: var(--accent-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
+        }
+
+        .start-btn.running {
+            background: var(--accent-pink);
+        }
+
+        .start-btn.running:hover {
+            background: #db2777;
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+        }
+
+        .start-btn::before {
+            content: "开始测试";
+        }
+
+        .start-btn.running::before {
+            content: "停止";
+        }
+
+        /* ========================================
+           Privacy Link
+           ======================================== */
+        .privacy-link {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .privacy-link:hover {
+            color: var(--text-secondary);
+        }
+
+        /* ========================================
+           Test Grid
+           ======================================== */
+        .test-grid {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+        }
+
+        .test-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-md);
+        }
+
+        /* ========================================
+           Test Card
+           ======================================== */
+        .test-card {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            transition: all var(--transition-normal);
+            overflow: hidden;
+        }
+
+        .test-card:hover {
+            background: var(--card-hover-bg);
+            border-color: var(--card-hover-border);
+        }
+
+        .test-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-md);
+        }
+
+        .test-card-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .test-card-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-sm);
+            font-size: 16px;
+        }
+
+        .test-card-icon.download {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--color-download);
+        }
+
+        .test-card-icon.upload {
+            background: rgba(236, 72, 153, 0.1);
+            color: var(--color-upload);
+        }
+
+        .test-card-icon.ping {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--color-ping);
+        }
+
+        .test-card-icon.jitter {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--color-jitter);
+        }
+
+        .test-card-content {
+            position: relative;
+        }
+
+        .test-card-meter {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .test-card-value {
+            position: relative;
+            z-index: 1;
+            font-family: var(--font-mono);
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.02em;
+        }
+
+        .test-card-value.download {
+            color: var(--color-download);
+        }
+
+        .test-card-value.upload {
+            color: var(--color-upload);
+        }
+
+        .test-card-value.ping {
+            color: var(--color-ping);
+        }
+
+        .test-card-value.jitter {
+            color: var(--color-jitter);
+        }
+
+        .test-card-value:empty::before {
+            content: "--";
+            opacity: 0.2;
+        }
+
+        .test-card-unit {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            margin-top: var(--space-xs);
+        }
+
+        /* Meter Cards (Download/Upload) */
+        .test-card.meter-card {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .test-card.meter-card .test-card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .test-card.meter-card .test-card-value {
+            font-size: 48px;
+        }
+
+        /* Small Cards (Ping/Jitter) */
+        .test-card.small-card {
+            min-height: 120px;
+        }
+
+        .test-card.small-card .test-card-value {
+            font-size: 36px;
+        }
+
+        /* ========================================
+           Progress Bar
+           ======================================== */
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: var(--meter-bg);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: var(--space-md);
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-blue);
+            border-radius: 2px;
+            transition: width var(--transition-fast);
+        }
+
+        .test-card.upload .progress-bar-fill {
+            background: var(--color-upload);
+        }
+
+        /* ========================================
+           IP Area
+           ======================================== */
+        .ip-area {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        .ip-area-value {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .ip-area-value:empty::before {
+            content: "--";
+            opacity: 0.3;
+        }
+
+        /* ========================================
+           Share Area
+           ======================================== */
+        .share-area {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .share-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-lg);
+        }
+
+        .share-header-icon {
+            font-size: 20px;
+        }
+
+        .share-header-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .share-divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: var(--space-md) 0;
+        }
+
+        .share-field {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+        }
+
+        .share-field:last-child {
+            margin-bottom: 0;
+        }
+
+        .share-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            min-width: 60px;
+        }
+
+        .share-badge {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 500;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--card-hover-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+        }
+
+        .share-input-group {
+            flex: 1;
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .share-input {
+            flex: 1;
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: border-color var(--transition-fast);
+        }
+
+        .share-input:focus {
+            border-color: var(--accent-blue);
+        }
+
+        .share-input::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        .share-copy-btn {
+            padding: var(--space-sm) var(--space-md);
+            font-family: var(--font-sans);
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            white-space: nowrap;
+        }
+
+        .share-copy-btn:hover {
+            background: var(--bg-elevated);
+            border-color: var(--border-strong);
+        }
+
+        .share-copy-btn.copied {
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+        }
+
+        .share-image {
+            margin-top: var(--space-md);
+            width: 100%;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+        }
+
+        /* ========================================
+           Footer
+           ======================================== */
+        .footer {
+            padding: var(--space-xl) 0;
+            text-align: center;
+        }
+
+        .footer-link {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            text-decoration: none;
+            transition: color var(--transition-fast);
+        }
+
+        .footer-link:hover {
+            color: var(--text-secondary);
+        }
+
+        /* ========================================
+           Modal
+           ======================================== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--overlay-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: var(--space-lg);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal-overlay[style*="display: none"] {
+            animation: none;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            background: var(--modal-bg);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            border-radius: var(--radius-sm);
+            color: var(--text-tertiary);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .modal-close:hover {
+            background: var(--card-hover-bg);
+            color: var(--text-primary);
+        }
+
+        .modal-close svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .modal-body {
+            padding: var(--space-lg);
+            overflow-y: auto;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.7;
+        }
+
+        .modal-body h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: var(--space-lg) 0 var(--space-sm);
+        }
+
+        .modal-body h3:first-child {
+            margin-top: 0;
+        }
+
+        .modal-body p {
+            margin-bottom: var(--space-sm);
+        }
+
+        .modal-body ul {
+            margin: var(--space-sm) 0;
+            padding-left: var(--space-lg);
+        }
+
+        .modal-body li {
+            margin-bottom: var(--space-xs);
+        }
+
+        .modal-body a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .modal-body a:hover {
+            text-decoration: underline;
+        }
+
+        .modal-footer {
+            padding: var(--space-md) var(--space-lg);
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-btn {
+            padding: var(--space-sm) var(--space-lg);
+            font-family: var(--font-sans);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-default);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .modal-btn:hover {
+            background: var(--bg-elevated);
+            border-color: var(--border-strong);
+        }
+
+        /* ========================================
+           Responsive
+           ======================================== */
+        @media (max-width: 640px) {
+            .header {
+                padding: var(--space-sm) var(--space-md);
+            }
+
+            .header-title {
+                font-size: 14px;
+            }
+
+            .main {
+                padding: var(--space-lg) 0;
+            }
+
+            .container {
+                padding: 0 var(--space-md);
+            }
+
+            .test-row {
+                grid-template-columns: 1fr;
+            }
+
+            .test-card.meter-card .test-card-value {
+                font-size: 36px;
+            }
+
+            .test-card.small-card .test-card-value {
+                font-size: 28px;
+            }
+
+            .share-field {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .share-input-group {
+                width: 100%;
+            }
+
+            .modal {
+                max-height: 90vh;
+                border-radius: var(--radius-lg);
+            }
+        }
+
+        /* ========================================
+           Animations
+           ======================================== */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ========================================
+           Light Theme Specific Overrides
+           ======================================== */
+        [data-theme="light"] .test-card-value {
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="light"] .test-card-value.download {
+            color: #1d4ed8;
+        }
+
+        [data-theme="light"] .test-card-value.upload {
+            color: #be185d;
+        }
+
+        [data-theme="light"] .test-card-value.ping {
+            color: #047857;
+        }
+
+        [data-theme="light"] .test-card-value.jitter {
+            color: #b45309;
+        }
+
+        [data-theme="light"] .test-card-label {
+            color: #475569;
+        }
+
+        [data-theme="light"] .test-card-icon.download {
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        [data-theme="light"] .test-card-icon.upload {
+            background: rgba(219, 39, 119, 0.1);
+        }
+
+        [data-theme="light"] .test-card-icon.ping {
+            background: rgba(5, 150, 105, 0.1);
+        }
+
+        [data-theme="light"] .test-card-icon.jitter {
+            background: rgba(217, 119, 6, 0.1);
+        }
+
+        [data-theme="light"] .header-title {
+            color: #0f172a;
+        }
+
+        [data-theme="light"] .share-header-title {
+            color: #0f172a;
+        }
+
+        [data-theme="light"] .modal-title {
+            color: #0f172a;
+        }
+
+        [data-theme="light"] .ip-area {
+            color: #64748b;
+        }
+
+        [data-theme="light"] .ip-area-value {
+            color: #334155;
+        }
+
+        [data-theme="light"] .share-badge {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        [data-theme="light"] .share-input {
+            background: #f8fafc;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        [data-theme="light"] .share-input:focus {
+            border-color: #2563eb;
+        }
+
+        [data-theme="light"] .share-copy-btn {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        [data-theme="light"] .share-copy-btn:hover {
+            background: #e2e8f0;
+        }
+
+        [data-theme="light"] .progress-bar {
+            background: #e2e8f0;
+        }
+
+        [data-theme="light"] .progress-bar-fill {
+            background: #2563eb;
+        }
+
+        [data-theme="light"] .test-card.upload .progress-bar-fill {
+            background: #be185d;
+        }
+
+        [data-theme="light"] .privacy-link {
+            color: #64748b;
+        }
+
+        [data-theme="light"] .privacy-link:hover {
+            color: #334155;
+        }
+
+        [data-theme="light"] .footer-link {
+            color: #64748b;
+        }
+
+        [data-theme="light"] .footer-link:hover {
+            color: #334155;
+        }
+
+        [data-theme="light"] .modal-body {
+            color: #475569;
+        }
+
+        [data-theme="light"] .modal-body h3 {
+            color: #0f172a;
+        }
+
+        [data-theme="light"] .modal-body a {
+            color: #2563eb;
+        }
+
+        [data-theme="light"] .modal-btn {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        [data-theme="light"] .modal-btn:hover {
+            background: #e2e8f0;
+        }
+
+        [data-theme="light"] .share-divider {
+            background: #e2e8f0;
+        }
+
+        [data-theme="light"] .start-btn {
+            box-shadow: 0 1px 3px 0 rgba(37, 99, 235, 0.3);
+        }
+
+        [data-theme="light"] .start-btn:hover {
+            box-shadow: 0 4px 12px 0 rgba(37, 99, 235, 0.35);
+        }
+
+        [data-theme="light"] .start-btn.running {
+            box-shadow: 0 1px 3px 0 rgba(219, 39, 119, 0.3);
+        }
+
+        [data-theme="light"] .start-btn.running:hover {
+            box-shadow: 0 4px 12px 0 rgba(219, 39, 119, 0.35);
+        }
+    </style>
 </head>
 <body>
-<div class="header">
-	<h1>网络速度测试</h1>
-	<button id="themeToggle" onclick="toggleTheme()" title="切换到亮色模式">&#9728;</button>
-</div>
-<div class="main-area">
-	<div id="startStopBtn" onclick="startStop()"></div><br/>
-	<a class="privacy-link" href="#" onclick="I('privacyPolicy').style.display=''">隐私条款</a>
-	<div id="test">
-		<div class="testGroup">
-			<div class="testArea2">
-				<div class="testName">Ping</div>
-				<div id="pingText" class="meterText"></div>
-				<div class="unit">ms</div>
-			</div>
-			<div class="testArea2">
-				<div class="testName">偏差</div>
-				<div id="jitText" class="meterText"></div>
-				<div class="unit">ms</div>
-			</div>
-		</div>
-		<div class="testGroup">
-			<div class="testArea">
-				<div class="testName">下行</div>
-				<canvas id="dlMeter" class="meter"></canvas>
-				<div id="dlText" class="meterText"></div>
-				<div class="unit">Mbps</div>
-			</div>
-			<div class="testArea">
-				<div class="testName">上行</div>
-				<canvas id="ulMeter" class="meter"></canvas>
-				<div id="ulText" class="meterText"></div>
-				<div class="unit">Mbps</div>
-			</div>
-		</div>
-		<div id="ipArea">
-			IP: <span id="ip"></span>
-		</div>
-		<div id="shareArea" style="display:none">
-			<h3>&#127942; 分享结果</h3>
-			<div class="share-divider"></div>
-			<div class="share-field">
-				<label>测试ID</label>
-				<span class="share-badge" id="testId"></span>
-			</div>
-			<div class="share-divider"></div>
-			<div class="share-field">
-				<label>链接</label>
-				<input type="text" value="" id="resultsURL" readonly="readonly" onclick="this.select()"/>
-				<button id="copyBtn" onclick="copyResult()">复制</button>
-			</div>
-			<img src="" id="resultsImg" class="share-img" />
-		</div>
-	</div>
-	<a class="footer-link" href="https://github.com/meimolihan/speedtest-go-zh" target="_blank">GitHub</a>
-</div>
-<div id="privacyPolicy" style="display:none">
-	<h2>隐私条款</h2>
-	<p>这是一个基于HTML5的测试工具。</p>
-	<h4>我们收集什么数据</h4>
-	<p>
-		测试结束时，将收集并存储以下数据：
-	</p><ul>
-		<li>测试ID</li>
-		<li>测试时间</li>
-		<li>测试结果</li>
-		<li>IP地址</li>
-		<li>ISP信息</li>
-		<li>大概位置（根据IP地址而非GPS推断）</li>
-		<li>用户代理和浏览器区域设置</li>
-		<li>测试日志（不包含任何个人信息）</li>
-	</ul>
-	<p></p>
-	<h4>我们如何使用数据</h4>
-	<p>
-		通过此服务收集的数据用于：
-	</p><ul>
-		<li>允许共享测试结果</li>
-		<li>改善向您提供的服务（例如：测速工具存在BUG）</li>
-	</ul>
-	没有将个人信息透露给第三方。
-	<p></p>
-	<h4>如何同意</h4>
-	<p>
-		一旦开始测试，即表示您同意本隐私政策的条款。
-	</p>
-	<h4>资料移除</h4>
-	<p>
-		如果要删除信息，则需要提供测试的ID或IP地址。 这是识别您的数据的唯一方法，没有这些信息，我们将无法满足您的要求。<br><br>
-		请与该电子邮件地址联系以获取所有删除请求：<a href="mailto:admin@github.com">admin@github.com</a>.
-	</p>
-	<br><br>
-	<div class="closePrivacyPolicy">
-		<a class="privacy-link" href="#" onclick="I('privacyPolicy').style.display='none'">关闭</a>
-	</div>
-</div>
-<script type="text/javascript">setTimeout(function(){initUI()},100);</script>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-brand">
+            <div class="header-logo">S</div>
+            <span class="header-title">网络速度测试</span>
+        </div>
+        <div class="header-actions">
+            <button class="theme-toggle" onclick="toggleTheme()" title="切换主题" aria-label="切换主题">
+                <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <div class="main-content">
+                <!-- Start Button -->
+                <button id="startStopBtn" class="start-btn" onclick="startStop()"></button>
+                <a class="privacy-link" href="#" onclick="openPrivacyModal(); return false;">隐私条款</a>
+
+                <!-- Test Grid -->
+                <div class="test-grid">
+                    <!-- Ping & Jitter Row -->
+                    <div class="test-row">
+                        <div class="test-card small-card">
+                            <div class="test-card-header">
+                                <span class="test-card-label">Ping</span>
+                                <div class="test-card-icon ping">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="2"></circle>
+                                        <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="test-card-content">
+                                <div id="pingText" class="test-card-value ping"></div>
+                                <div class="test-card-unit">ms</div>
+                            </div>
+                        </div>
+                        <div class="test-card small-card">
+                            <div class="test-card-header">
+                                <span class="test-card-label">抖动</span>
+                                <div class="test-card-icon jitter">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="test-card-content">
+                                <div id="jitText" class="test-card-value jitter"></div>
+                                <div class="test-card-unit">ms</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download & Upload Row -->
+                    <div class="test-row">
+                        <div class="test-card meter-card">
+                            <div class="test-card-header">
+                                <span class="test-card-label">下载</span>
+                                <div class="test-card-icon download">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="test-card-content">
+                                <canvas id="dlMeter" class="test-card-meter"></canvas>
+                                <div id="dlText" class="test-card-value download"></div>
+                                <div class="test-card-unit">Mbps</div>
+                                <div class="progress-bar">
+                                    <div id="dlProgress" class="progress-bar-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="test-card meter-card upload">
+                            <div class="test-card-header">
+                                <span class="test-card-label">上传</span>
+                                <div class="test-card-icon upload">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="test-card-content">
+                                <canvas id="ulMeter" class="test-card-meter"></canvas>
+                                <div id="ulText" class="test-card-value upload"></div>
+                                <div class="test-card-unit">Mbps</div>
+                                <div class="progress-bar">
+                                    <div id="ulProgress" class="progress-bar-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IP Area -->
+                <div class="ip-area">
+                    <span>IP:</span>
+                    <span id="ip" class="ip-area-value"></span>
+                </div>
+
+                <!-- Share Area -->
+                <div id="shareArea" class="share-area" style="display: none;">
+                    <div class="share-header">
+                        <span class="share-header-icon">&#127942;</span>
+                        <span class="share-header-title">分享结果</span>
+                    </div>
+                    <div class="share-divider"></div>
+                    <div class="share-field">
+                        <span class="share-label">测试 ID</span>
+                        <span id="testId" class="share-badge"></span>
+                    </div>
+                    <div class="share-divider"></div>
+                    <div class="share-field">
+                        <span class="share-label">链接</span>
+                        <div class="share-input-group">
+                            <input type="text" id="resultsURL" class="share-input" readonly onclick="this.select()">
+                            <button id="copyBtn" class="share-copy-btn" onclick="copyResult()">复制</button>
+                        </div>
+                    </div>
+                    <img id="resultsImg" class="share-image" src="" alt="测试结果">
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <a class="footer-link" href="https://github.com/meimolihan/speedtest-go-zh" target="_blank" rel="noopener">GitHub</a>
+    </footer>
+
+    <!-- Privacy Modal -->
+    <div id="privacyModal" class="modal-overlay" style="display: none;" onclick="closePrivacyModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 class="modal-title">隐私条款</h2>
+                <button class="modal-close" onclick="closePrivacyModal()" aria-label="关闭">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>这是一个基于HTML5的测试工具。</p>
+
+                <h3>我们收集什么数据</h3>
+                <p>测试结束时，将收集并存储以下数据：</p>
+                <ul>
+                    <li>测试ID</li>
+                    <li>测试时间</li>
+                    <li>测试结果</li>
+                    <li>IP地址</li>
+                    <li>ISP信息</li>
+                    <li>大概位置（根据IP地址而非GPS推断）</li>
+                    <li>用户代理和浏览器区域设置</li>
+                    <li>测试日志（不包含任何个人信息）</li>
+                </ul>
+
+                <h3>我们如何使用数据</h3>
+                <p>通过此服务收集的数据用于：</p>
+                <ul>
+                    <li>允许共享测试结果</li>
+                    <li>改善向您提供的服务（例如：测速工具存在BUG）</li>
+                </ul>
+                <p>没有将个人信息透露给第三方。</p>
+
+                <h3>如何同意</h3>
+                <p>一旦开始测试，即表示您同意本隐私政策的条款。</p>
+
+                <h3>资料移除</h3>
+                <p>
+                    如果要删除信息，则需要提供测试的ID或IP地址。这是识别您的数据的唯一方法，没有这些信息，我们将无法满足您的要求。
+                </p>
+                <p>
+                    请与该电子邮件地址联系以获取所有删除请求：<a href="mailto:admin@github.com">admin@github.com</a>
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn" onclick="closePrivacyModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="text/javascript">
+        // ========================================
+        // Utility Functions
+        // ========================================
+        function I(i) {
+            return document.getElementById(i);
+        }
+
+        // ========================================
+        // Theme Management
+        // ========================================
+        function initTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved) {
+                document.documentElement.setAttribute('data-theme', saved);
+            } else {
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        }
+
+        // Listen for system theme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            if (!localStorage.getItem('theme')) {
+                document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+            }
+        });
+
+        // ========================================
+        // Privacy Modal
+        // ========================================
+        function openPrivacyModal() {
+            I('privacyModal').style.display = '';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closePrivacyModal(e) {
+            if (!e || e.target === I('privacyModal')) {
+                I('privacyModal').style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && I('privacyModal').style.display !== 'none') {
+                closePrivacyModal();
+            }
+        });
+
+        // ========================================
+        // Speedtest Integration
+        // ========================================
+        var s = new Speedtest();
+        s.setParameter("telemetry_level", "basic");
+
+        var meterBk = "rgba(255, 255, 255, 0.06)";
+        var dlColor = '#3b82f6';
+        var ulColor = '#ec4899';
+        var progColor = '#3b82f6';
+
+        // Update colors based on theme
+        function updateColors() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            meterBk = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
+            dlColor = isDark ? '#3b82f6' : '#1d4ed8';
+            ulColor = isDark ? '#ec4899' : '#be185d';
+            progColor = dlColor;
+        }
+
+        // ========================================
+        // Meter Drawing
+        // ========================================
+        function drawMeter(c, amount, bk, fg, progress, prog) {
+            var ctx = c.getContext("2d");
+            var dp = window.devicePixelRatio || 1;
+            var cw = c.clientWidth * dp;
+            var ch = c.clientHeight * dp;
+            var sizScale = ch * 0.0055;
+
+            if (c.width == cw && c.height == ch) {
+                ctx.clearRect(0, 0, cw, ch);
+            } else {
+                c.width = cw;
+                c.height = ch;
+            }
+
+            // Background arc
+            ctx.beginPath();
+            ctx.strokeStyle = bk;
+            ctx.lineWidth = 10 * sizScale;
+            ctx.lineCap = 'round';
+            ctx.arc(c.width / 2, c.height - 40 * sizScale, c.height / 1.8 - ctx.lineWidth, -Math.PI * 1.1, Math.PI * 0.1);
+            ctx.stroke();
+
+            // Progress arc
+            ctx.beginPath();
+            ctx.strokeStyle = fg;
+            ctx.lineWidth = 10 * sizScale;
+            ctx.lineCap = 'round';
+            ctx.arc(c.width / 2, c.height - 40 * sizScale, c.height / 1.8 - ctx.lineWidth, -Math.PI * 1.1, amount * Math.PI * 1.2 - Math.PI * 1.1);
+            ctx.stroke();
+
+            // Glow effect
+            if (amount > 0) {
+                ctx.shadowColor = fg;
+                ctx.shadowBlur = 15 * sizScale;
+                ctx.beginPath();
+                ctx.strokeStyle = fg;
+                ctx.lineWidth = 4 * sizScale;
+                ctx.lineCap = 'round';
+                ctx.arc(c.width / 2, c.height - 40 * sizScale, c.height / 1.8 - ctx.lineWidth, -Math.PI * 1.1, amount * Math.PI * 1.2 - Math.PI * 1.1);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function mbpsToAmount(s) {
+            return 1 - (1 / (Math.pow(1.3, Math.sqrt(s))));
+        }
+
+        function format(d) {
+            d = Number(d);
+            if (d < 10) return d.toFixed(2);
+            if (d < 100) return d.toFixed(1);
+            return d.toFixed(0);
+        }
+
+        // ========================================
+        // UI State
+        // ========================================
+        var uiData = null;
+
+        function startStop() {
+            if (s.getState() == 3) {
+                s.abort();
+                data = null;
+                I("startStopBtn").className = "start-btn";
+                initUI();
+            } else {
+                I("startStopBtn").className = "start-btn running";
+                I("shareArea").style.display = "none";
+                updateColors();
+
+                s.onupdate = function(data) {
+                    uiData = data;
+                };
+
+                s.onend = function(aborted) {
+                    I("startStopBtn").className = "start-btn";
+                    updateUI(true);
+                    if (!aborted) {
+                        try {
+                            var testId = uiData.testId;
+                            if (testId != null) {
+                                var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+                                var themeParam = isDark ? "&theme=dark" : "";
+                                var shareURL = window.location.href.substring(0, window.location.href.lastIndexOf("/")) + "/results/?id=" + testId + themeParam;
+                                I("resultsImg").src = shareURL;
+                                I("resultsURL").value = shareURL;
+                                I("testId").innerHTML = testId;
+                                I("shareArea").style.display = "";
+                            }
+                        } catch(e) {}
+                    }
+                };
+
+                s.start();
+            }
+        }
+
+        function updateUI(forced) {
+            if (!forced && s.getState() != 3) return;
+            if (uiData == null) return;
+
+            var status = uiData.testState;
+            I("ip").textContent = uiData.clientIp;
+
+            // Download
+            I("dlText").textContent = (status == 1 && uiData.dlStatus == 0) ? "..." : format(uiData.dlStatus);
+            drawMeter(I("dlMeter"), mbpsToAmount(Number(uiData.dlStatus * (status == 1 ? oscillate() : 1))), meterBk, dlColor, Number(uiData.dlProgress), progColor);
+            I("dlProgress").style.width = (Number(uiData.dlProgress) * 100) + "%";
+
+            // Upload
+            I("ulText").textContent = (status == 3 && uiData.ulStatus == 0) ? "..." : format(uiData.ulStatus);
+            drawMeter(I("ulMeter"), mbpsToAmount(Number(uiData.ulStatus * (status == 3 ? oscillate() : 1))), meterBk, ulColor, Number(uiData.ulProgress), progColor);
+            I("ulProgress").style.width = (Number(uiData.ulProgress) * 100) + "%";
+
+            // Ping & Jitter
+            I("pingText").textContent = format(uiData.pingStatus);
+            I("jitText").textContent = format(uiData.jitterStatus);
+        }
+
+        function oscillate() {
+            return 1 + 0.02 * Math.sin(Date.now() / 100);
+        }
+
+        window.requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.msRequestAnimationFrame || (function(callback, element) {
+            setTimeout(callback, 1000 / 60);
+        });
+
+        function frame() {
+            requestAnimationFrame(frame);
+            updateUI();
+        }
+
+        frame();
+
+        function initUI() {
+            drawMeter(I("dlMeter"), 0, meterBk, dlColor, 0);
+            drawMeter(I("ulMeter"), 0, meterBk, ulColor, 0);
+            I("dlText").textContent = "";
+            I("ulText").textContent = "";
+            I("pingText").textContent = "";
+            I("jitText").textContent = "";
+            I("ip").textContent = "";
+            I("dlProgress").style.width = "0%";
+            I("ulProgress").style.width = "0%";
+        }
+
+        // ========================================
+        // Copy Result
+        // ========================================
+        function copyResult() {
+            var input = I("resultsURL");
+            input.select();
+            input.focus();
+            input.select();
+
+            navigator.clipboard.writeText(input.value).then(() => {
+                var btn = I("copyBtn");
+                btn.classList.add('copied');
+                btn.textContent = "已复制!";
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.textContent = "复制";
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                document.execCommand('copy');
+                var btn = I("copyBtn");
+                btn.classList.add('copied');
+                btn.textContent = "已复制!";
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.textContent = "复制";
+                }, 2000);
+            });
+        }
+
+        // ========================================
+        // Initialize
+        // ========================================
+        initTheme();
+        setTimeout(function() {
+            initUI();
+            updateColors();
+        }, 100);
+    </script>
 </body>
 </html>
