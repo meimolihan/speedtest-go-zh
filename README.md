@@ -12,6 +12,8 @@
 
 ![暗色模式](screenshots/dc_inst_speedtest-02.webp)
 
+![效果预览](../screenshots/dc_inst_speedtest-02.webp)
+
 ### ☀️ 亮色模式
 支持一键切换明暗主题，右上角按钮即可切换。
 
